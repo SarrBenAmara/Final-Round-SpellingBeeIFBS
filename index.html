@@ -1,0 +1,1687 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bee Hive Spelling Challenge</title>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    .hexagon {
+      width: 64px;
+      height: 74px;
+      position: relative;
+      margin: 2px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .hexagon-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      box-shadow: inset 0 2px 8px rgba(255, 255, 255, 0.5), 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .hexagon:not(.used):hover .hexagon-inner {
+      transform: scale(1.15);
+      filter: brightness(1.1) saturate(1.15);
+    }
+    
+    .hexagon.used {
+      pointer-events: none;
+    }
+    
+    .hexagon.used .hexagon-inner {
+      opacity: 0.3;
+    }
+    
+    .honeycomb-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: -6px;
+    }
+    
+    .hexagon-row {
+      display: flex;
+      gap: 2px;
+    }
+    
+    .hexagon-row:nth-child(even) {
+      margin-left: 34px;
+    }
+    
+    .floating-bee {
+      position: absolute;
+      font-size: 32px;
+      animation: float 4s ease-in-out infinite;
+      pointer-events: none;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(-5deg); }
+      50% { transform: translateY(-15px) rotate(5deg); }
+    }
+    
+    .student-display {
+      transition: all 0.4s ease;
+      position: relative;
+    }
+    
+    .student-display.active {
+      transform: scale(1.08);
+    }
+    
+    .winner-badge {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      background: #FBBF24;
+      color: #78350F;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      border: 3px solid white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      animation: bounce 0.6s ease;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 16px;
+      animation: slideIn 0.3s ease;
+      z-index: 1000;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+    
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 32px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90%;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: scaleIn 0.3s ease;
+    }
+
+    @keyframes scaleIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .mode-card {
+      padding: 24px;
+      border-radius: 16px;
+      border: 3px solid #FF9800;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .mode-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(255, 152, 0, 0.3);
+    }
+
+    .year-button {
+      padding: 16px;
+      border-radius: 12px;
+      border: 3px solid #FF9800;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+      text-align: center;
+      font-weight: 800;
+      color: #E65100;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .year-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(255, 152, 0, 0.3);
+    }
+
+    .year-button.selected {
+      background: linear-gradient(135deg, #FF9800, #F57C00);
+      color: white;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body class="h-full">
+  <div id="app" class="w-full h-full" style="background: linear-gradient(135deg, #FFF8E1 0%, #FFE082 50%, #FFD54F 100%); position: relative; overflow: hidden;"><!-- Floating Bees -->
+   <div class="floating-bee" style="top: 10%; left: 8%; animation-delay: 0s;">
+    🐝
+   </div>
+   <div class="floating-bee" style="top: 25%; right: 12%; animation-delay: 1s;">
+    🐝
+   </div>
+   <div class="floating-bee" style="bottom: 15%; left: 10%; animation-delay: 2s;">
+    🐝
+   </div>
+   <div class="floating-bee" style="bottom: 30%; right: 8%; animation-delay: 1.5s;">
+    🐝
+   </div>
+   <div style="width: 100%; height: 100%; margin: 0; padding: 10px; display: grid; grid-template-rows: auto 1fr; gap: 8px; position: relative; z-index: 1; box-sizing: border-box;"><!-- Header -->
+    <header style="display: flex; align-items: center; justify-content: space-between; gap: 16px;"><img src="https://i.imgur.com/7fOqYlQ.png" alt="School Logo" style="height: 90px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));" onerror="this.src='https://i.imgur.com/7fOqYlQ.jpg';">
+     <div style="text-align: center; flex: 1;">
+      <h1 id="game-title" style="font-size: 28px; font-weight: 900; color: #F57C00; margin-bottom: 2px; text-shadow: 2px 2px 0px rgba(255, 193, 7, 0.4), 0 4px 12px rgba(0,0,0,0.15); letter-spacing: -0.5px;">🐝 Bee Hive Spelling Challenge</h1>
+      <p id="instruction-text" style="font-size: 13px; color: #E65100; font-weight: 700; opacity: 0.9;">Click a hexagon to hear a word. Spell it correctly to earn points!</p>
+     </div><img src="https://i.imgur.com/XTVk5jF.png" alt="Owner Logo" style="height: 90px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));" onerror="this.style.display='none'; this.alt='Logo not available';">
+    </header><!-- Main Game Area -->
+    <main id="game-area" style="display: grid; grid-template-columns: 230px 1fr 230px; gap: 10px; height: 100%;"><!-- Left Panel - Current Player & Controls -->
+     <div style="display: flex; flex-direction: column; gap: 12px;"><!-- Current Player -->
+      <div id="current-player-display" class="student-display active" style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2); padding: 12px; border-radius: 14px; border: 3px solid #FF9800; box-shadow: 0 8px 24px rgba(255, 152, 0, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.4);">
+       <div style="text-align: center;">
+        <div id="current-player-name" style="font-size: 16px; font-weight: 800; color: #E65100; margin-bottom: 6px; min-height: 24px; text-align: center; border: 2px solid rgba(255, 152, 0, 0.4); border-radius: 8px; padding: 4px 6px; background: rgba(255, 255, 255, 0.8); width: 100%; box-sizing: border-box;">
+         Student
+        </div>
+        <div style="font-size: 9px; font-weight: 700; color: #E65100; margin-bottom: 3px; letter-spacing: 1.5px; opacity: 0.8;">
+         SCORE
+        </div>
+        <div id="current-player-score" style="font-size: 42px; font-weight: 900; color: #F57C00; line-height: 1; text-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+         0
+        </div>
+       </div>
+      </div><!-- Secondary Mode Second Player (hidden in Primary mode) -->
+      <div id="second-player-display" class="student-display" style="display: none; background: linear-gradient(135deg, #ECEFF1, #CFD8DC); padding: 12px; border-radius: 14px; border: 3px solid #90A4AE; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+       <div style="text-align: center;">
+        <div id="second-player-name" style="font-size: 16px; font-weight: 800; color: #455A64; margin-bottom: 6px; min-height: 24px; text-align: center; border: 2px solid rgba(144, 164, 174, 0.5); border-radius: 8px; padding: 4px 6px; background: rgba(255, 255, 255, 0.8); width: 100%; box-sizing: border-box;">
+         Student B
+        </div>
+        <div style="font-size: 9px; font-weight: 700; color: #546E7A; margin-bottom: 3px; letter-spacing: 1.5px; opacity: 0.8;">
+         SCORE
+        </div>
+        <div id="second-player-score" style="font-size: 42px; font-weight: 900; color: #607D8B; line-height: 1; text-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+         0
+        </div>
+       </div>
+      </div><!-- Control Buttons -->
+      <div style="display: flex; flex-direction: column; gap: 8px;"><button id="correct-btn" style="background: linear-gradient(135deg, #66BB6A, #43A047); color: white; padding: 10px 16px; border-radius: 10px; font-weight: 800; font-size: 14px; border: none; cursor: pointer; box-shadow: 0 6px 20px rgba(67, 160, 71, 0.4); transition: all 0.2s;">✓ CORRECT</button> <button id="mistake-btn" style="background: linear-gradient(135deg, #EF5350, #E53935); color: white; padding: 10px 16px; border-radius: 10px; font-weight: 800; font-size: 14px; border: none; cursor: pointer; box-shadow: 0 6px 20px rgba(229, 57, 53, 0.4); transition: all 0.2s;">✗ MISTAKE</button> <button id="reset-btn" style="background: linear-gradient(135deg, #78909C, #546E7A); color: white; padding: 10px 16px; border-radius: 10px; font-weight: 800; font-size: 14px; border: none; cursor: pointer; box-shadow: 0 6px 20px rgba(84, 110, 122, 0.4); transition: all 0.2s;">🔄 NEW GAME</button>
+      </div>
+     </div><!-- Center - Honeycomb Grid -->
+     <div style="background: rgba(255, 255, 255, 0.95); border-radius: 18px; padding: 14px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12), 0 0 0 2px rgba(255, 152, 0, 0.2); backdrop-filter: blur(12px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+      <div id="honeycomb" class="honeycomb-container"></div><!-- Spelling Input Box -->
+      <div id="spelling-input-container" style="display: none; width: 100%; max-width: 380px;">
+       <div style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2); padding: 12px; border-radius: 10px; border: 3px solid #FF9800; box-shadow: 0 4px 16px rgba(255, 152, 0, 0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;"><label for="spelling-input" style="font-size: 12px; font-weight: 800; color: #E65100;">Type the spelling:</label>
+         <div id="timer-display" style="font-size: 20px; font-weight: 900; color: #E65100; background: rgba(255, 255, 255, 0.8); padding: 4px 12px; border-radius: 8px; border: 2px solid #FF9800;">
+          40
+         </div>
+        </div><input type="text" id="spelling-input" placeholder="Enter word here..." style="width: 100%; padding: 10px; border: 2px solid #FF9800; border-radius: 8px; font-size: 16px; font-weight: 600; text-align: center; margin-bottom: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
+        <div style="display: flex; gap: 8px;"><button id="check-spelling-btn" style="flex: 1; background: linear-gradient(135deg, #66BB6A, #43A047); color: white; padding: 10px; border-radius: 8px; font-weight: 800; font-size: 13px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(67, 160, 71, 0.4); transition: all 0.2s;">✓ Check</button> <button id="cancel-spelling-btn" style="flex: 1; background: linear-gradient(135deg, #78909C, #546E7A); color: white; padding: 10px; border-radius: 8px; font-weight: 800; font-size: 13px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(84, 110, 122, 0.4); transition: all 0.2s;">Cancel</button>
+        </div>
+       </div>
+      </div>
+     </div><!-- Right Panel - Eliminated Players & Leaderboard -->
+     <div style="display: flex; flex-direction: column; gap: 12px;"><!-- Eliminated Players & Leaderboard -->
+      <div style="background: rgba(255, 255, 255, 0.95); border-radius: 14px; padding: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 0 0 2px rgba(255, 152, 0, 0.15); backdrop-filter: blur(12px); flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;"><!-- Eliminated Players Section -->
+       <div id="eliminated-section" style="display: none;">
+        <h3 style="font-size: 16px; font-weight: 900; color: #E65100; margin-bottom: 8px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">❌ Eliminated</h3>
+        <div id="eliminated-list"></div>
+        <div style="height: 2px; background: linear-gradient(90deg, transparent, #FF9800, transparent); margin: 12px 0;"></div>
+       </div><!-- Leaderboard -->
+       <div>
+        <h2 style="font-size: 20px; font-weight: 900; color: #F57C00; margin-bottom: 12px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">🏆 Top Spellers</h2>
+        <div id="leaderboard"></div>
+       </div>
+      </div>
+     </div>
+    </main>
+   </div>
+  </div>
+  <script>
+    const DEFAULT_SECONDARY_WORDS = [
+      'abdicate', 'aberration', 'abstain', 'acquiesce', 'adversity', 'aesthetic', 'alleviate', 'ambivalent', 'anomaly', 'antagonize',
+      'apathy', 'arbitrary', 'articulate', 'ascertain', 'aspiration', 'audacious', 'authenticity', 'belligerent', 'benign', 'boisterous',
+      'candor', 'catalyst', 'censure', 'circumvent', 'coherent', 'conducive', 'connoisseur', 'conspicuous', 'contemplate', 'credible',
+      'cumulative', 'debilitate', 'decree', 'deference', 'delineate', 'denounce', 'derivative', 'detrimental', 'devious', 'digress',
+      'diligent', 'discern', 'discord', 'discretion', 'disparage', 'disposition', 'dormant', 'eccentric', 'eloquent', 'emphatic',
+      'endeavor', 'entail', 'epiphany', 'equitable', 'feasible', 'fluctuate', 'formidable', 'frivolous', 'fundamental', 'futile',
+      'gratuitous', 'gregarious', 'heinous', 'hypocrisy', 'idiosyncrasy', 'illicit', 'imperative', 'implicit', 'inadvertent', 'incessant',
+      'incite', 'incompetent', 'incredible', 'inevitable', 'inferior', 'ingenious', 'innate', 'insightful', 'instigate', 'integral',
+      'intermittent', 'intrepid', 'judicious', 'lament', 'lucrative', 'magnanimous', 'meticulous', 'morose', 'mundane', 'negligent',
+      'notorious', 'oblivious', 'obsolete', 'omnipotent', 'onus', 'optimistic', 'ornate', 'ostracize', 'paradox', 'perpetual',
+      'pertinent', 'plausible', 'precocious', 'proclaim', 'procrastinate', 'profound', 'prohibit', 'propel', 'quaint', 'rational',
+      'reconcile', 'redundant', 'refute', 'relinquish', 'reluctant', 'resilient', 'scrutinize', 'simultaneous', 'substantiate', 'vindicate'
+    ];
+
+    // Pre-defined word lists for each year level (ordered by difficulty: easy to hard)
+    const DEFAULT_YEAR_WORDS = {
+      year1: ['spin', 'skin', 'slam', 'cram', 'slit', 'moth', 'path', 'look', 'upon', 'cloth'],
+      year2: {
+        phase1: ['fan', 'red', 'top', 'run'],
+        phase2: ['doctor', 'painter', 'farmer', 'nurse', 'police officer', 'window cleaner']
+      },
+      year34: ['bright', 'whisper', 'quickly', 'healthy', 'bridge', 'butterfly', 'library', 'capture', 'subject', 'thunder'],
+      year56: [
+        'eloquent', 'emphatic', 'endeavor', 'entail', 'epiphany', 'equitable', 'fluctuate', 'formidable',
+        'frivolous', 'fundamental', 'futile', 'gregarious', 'heinous', 'hypocrisy', 'idiosyncrasy', 'illicit',
+        'imperative', 'implicit', 'inadvertent', 'incessant', 'incite', 'incompetent', 'incredible', 'inevitable',
+        'inferior', 'ingenious', 'innate', 'insightful', 'instigate', 'integral', 'intermittent', 'intrepid',
+        'judicious', 'lament', 'lucrative', 'meticulous', 'morose', 'mundane', 'negligent', 'notorious',
+        'oblivious', 'obsolete', 'omnipotent', 'optimistic'
+      ]
+    };
+
+    const defaultConfig = {
+      game_title: "🐝 Bee Hive Spelling Challenge",
+      instruction_text: "Click a hexagon to hear a word. Spell it correctly to earn points!",
+      background_color: "#FFE082",
+      surface_color: "#FFFFFF",
+      text_color: "#E65100",
+      primary_action_color: "#FF9800",
+      secondary_action_color: "#F57C00",
+      font_family: "system-ui",
+      font_size: 16
+    };
+
+    let gameState = {
+      gameMode: null, // 'primary' or 'secondary'
+      yearLevel: null, // 'year1', 'year2', 'year34', 'year56'
+      customWords: {}, // Stores custom words for each year level
+      allStudents: [],
+      availableStudents: [],
+      currentPlayer: { name: '', score: 0 },
+      secondPlayer: { name: '', score: 0 }, // Only used in secondary mode
+      activePlayer: 'A', // Only used in secondary mode
+      usedHexagons: new Set(),
+      availableWords: [],
+      hexagonWords: [],
+      waitingForResponse: false,
+      wordsUsedCount: 0,
+      remainingWords: [],
+      currentClickedIndex: null,
+      repeatCount: 0,
+      maxRepeats: 3,
+      eliminatedPlayers: [],
+      gameStarted: false,
+      timerTimeout: null,
+      timeRemaining: 40,
+      studentScores: {}, // Tracks scores for all students across rounds
+      year2Phase: 1, // Tracks which phase of Year 2 words (1 = easy, 2 = hard)
+      year2CorrectCount: 0 // Tracks correct spellings in phase 1
+    };
+
+    let leaderboardData = [];
+
+    const dataHandler = {
+      onDataChanged(data) {
+        leaderboardData = data.sort((a, b) => b.score - a.score);
+        renderLeaderboard();
+      }
+    };
+
+    async function init() {
+      if (window.dataSdk) {
+        const result = await window.dataSdk.init(dataHandler);
+        if (!result.isOk) {
+          console.error("Failed to initialize data SDK");
+        }
+      }
+
+      if (window.elementSdk) {
+        await window.elementSdk.init({
+          defaultConfig,
+          onConfigChange: async (config) => {
+            const baseFontSize = config.font_size || defaultConfig.font_size;
+            const customFont = config.font_family || defaultConfig.font_family;
+            const fontStack = `${customFont}, system-ui, -apple-system, sans-serif`;
+
+            document.getElementById('app').style.background = `linear-gradient(135deg, ${config.background_color || defaultConfig.background_color} 0%, ${config.primary_action_color || defaultConfig.primary_action_color} 100%)`;
+
+            const titleEl = document.getElementById('game-title');
+            titleEl.textContent = config.game_title || defaultConfig.game_title;
+            titleEl.style.fontSize = `${baseFontSize * 1.75}px`;
+            titleEl.style.color = config.text_color || defaultConfig.text_color;
+            titleEl.style.fontFamily = fontStack;
+
+            const instructionEl = document.getElementById('instruction-text');
+            instructionEl.textContent = config.instruction_text || defaultConfig.instruction_text;
+            instructionEl.style.fontSize = `${baseFontSize * 0.8125}px`;
+            instructionEl.style.color = config.secondary_action_color || defaultConfig.secondary_action_color;
+            instructionEl.style.fontFamily = fontStack;
+
+            document.body.style.fontFamily = fontStack;
+          },
+          mapToCapabilities: (config) => ({
+            recolorables: [
+              {
+                get: () => config.background_color || defaultConfig.background_color,
+                set: (value) => {
+                  if (window.elementSdk) {
+                    window.elementSdk.config.background_color = value;
+                    window.elementSdk.setConfig({ background_color: value });
+                  }
+                }
+              },
+              {
+                get: () => config.surface_color || defaultConfig.surface_color,
+                set: (value) => {
+                  if (window.elementSdk) {
+                    window.elementSdk.config.surface_color = value;
+                    window.elementSdk.setConfig({ surface_color: value });
+                  }
+                }
+              },
+              {
+                get: () => config.text_color || defaultConfig.text_color,
+                set: (value) => {
+                  if (window.elementSdk) {
+                    window.elementSdk.config.text_color = value;
+                    window.elementSdk.setConfig({ text_color: value });
+                  }
+                }
+              },
+              {
+                get: () => config.primary_action_color || defaultConfig.primary_action_color,
+                set: (value) => {
+                  if (window.elementSdk) {
+                    window.elementSdk.config.primary_action_color = value;
+                    window.elementSdk.setConfig({ primary_action_color: value });
+                  }
+                }
+              },
+              {
+                get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+                set: (value) => {
+                  if (window.elementSdk) {
+                    window.elementSdk.config.secondary_action_color = value;
+                    window.elementSdk.setConfig({ secondary_action_color: value });
+                  }
+                }
+              }
+            ],
+            borderables: [],
+            fontEditable: {
+              get: () => config.font_family || defaultConfig.font_family,
+              set: (value) => {
+                if (window.elementSdk) {
+                  window.elementSdk.config.font_family = value;
+                  window.elementSdk.setConfig({ font_family: value });
+                }
+              }
+            },
+            fontSizeable: {
+              get: () => config.font_size || defaultConfig.font_size,
+              set: (value) => {
+                if (window.elementSdk) {
+                  window.elementSdk.config.font_size = value;
+                  window.elementSdk.setConfig({ font_size: value });
+                }
+              }
+            }
+          }),
+          mapToEditPanelValues: (config) => new Map([
+            ["game_title", config.game_title || defaultConfig.game_title],
+            ["instruction_text", config.instruction_text || defaultConfig.instruction_text]
+          ])
+        });
+      }
+
+      setupEventListeners();
+      showGameModeSelection();
+    }
+
+    function setupEventListeners() {
+      const correctBtn = document.getElementById('correct-btn');
+      const mistakeBtn = document.getElementById('mistake-btn');
+      const resetBtn = document.getElementById('reset-btn');
+      const checkSpellingBtn = document.getElementById('check-spelling-btn');
+      const cancelSpellingBtn = document.getElementById('cancel-spelling-btn');
+      const spellingInput = document.getElementById('spelling-input');
+      
+      correctBtn.addEventListener('click', handleCorrect);
+      mistakeBtn.addEventListener('click', handleMistake);
+      resetBtn.addEventListener('click', resetGame);
+      checkSpellingBtn.addEventListener('click', checkSpelling);
+      cancelSpellingBtn.addEventListener('click', cancelSpelling);
+      
+      spellingInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          checkSpelling();
+        }
+      });
+      
+      [correctBtn, mistakeBtn, resetBtn, checkSpellingBtn, cancelSpellingBtn].forEach(btn => {
+        btn.addEventListener('mouseenter', () => {
+          btn.style.transform = 'translateY(-2px)';
+          const currentShadow = btn.style.boxShadow;
+          if (currentShadow.includes('0 6px')) {
+            btn.style.boxShadow = currentShadow.replace('0 6px', '0 8px');
+          } else if (currentShadow.includes('0 4px')) {
+            btn.style.boxShadow = currentShadow.replace('0 4px', '0 6px');
+          }
+        });
+        btn.addEventListener('mouseleave', () => {
+          btn.style.transform = 'translateY(0)';
+          const currentShadow = btn.style.boxShadow;
+          if (currentShadow.includes('0 8px')) {
+            btn.style.boxShadow = currentShadow.replace('0 8px', '0 6px');
+          } else if (currentShadow.includes('0 6px')) {
+            btn.style.boxShadow = currentShadow.replace('0 6px', '0 4px');
+          }
+        });
+      });
+    }
+
+    function showGameModeSelection() {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 600px;">
+          <div style="font-size: 64px; text-align: center; margin-bottom: 16px;">🐝</div>
+          <h3 style="font-size: 32px; font-weight: 900; color: #F57C00; margin-bottom: 16px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Select Game Mode</h3>
+          
+          <div style="display: grid; gap: 16px; margin-bottom: 24px;">
+            <div class="mode-card" onclick="selectGameMode('primary')">
+              <div style="font-size: 48px; text-align: center; margin-bottom: 12px;">📚</div>
+              <h4 style="font-size: 24px; font-weight: 800; color: #E65100; margin-bottom: 8px; text-align: center;">Primary Mode</h4>
+              <p style="font-size: 14px; color: #78350F; text-align: center; line-height: 1.6;">One player at a time. Students compete individually, earning points for correct spellings. Choose from Year 1, 2, 3&4, or 5&6 word lists.</p>
+            </div>
+            
+            <div class="mode-card" onclick="selectGameMode('secondary')">
+              <div style="font-size: 48px; text-align: center; margin-bottom: 12px;">🎓</div>
+              <h4 style="font-size: 24px; font-weight: 800; color: #E65100; margin-bottom: 8px; text-align: center;">Secondary Mode</h4>
+              <p style="font-size: 14px; color: #78350F; text-align: center; line-height: 1.6;">Two players compete head-to-head. Advanced vocabulary words. Players alternate turns until one is eliminated.</p>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    window.selectGameMode = function(mode) {
+      gameState.gameMode = mode;
+      document.querySelector('.modal-overlay').remove();
+      
+      if (mode === 'primary') {
+        showYearLevelSelection();
+      } else {
+        showSecondaryStudentSetup();
+      }
+    };
+
+    function showYearLevelSelection() {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 600px;">
+          <div style="font-size: 64px; text-align: center; margin-bottom: 16px;">📚</div>
+          <h3 style="font-size: 28px; font-weight: 900; color: #F57C00; margin-bottom: 12px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Select Year Level</h3>
+          <p style="font-size: 16px; color: #78350F; margin-bottom: 20px; text-align: center; line-height: 1.6;">Choose the year level and enter custom words for the spelling challenge</p>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+            <div class="year-button" data-year="year1" onclick="selectYear('year1')">
+              <div style="font-size: 32px; margin-bottom: 8px;">1️⃣</div>
+              <div style="font-size: 16px;">Year 1</div>
+            </div>
+            <div class="year-button" data-year="year2" onclick="selectYear('year2')">
+              <div style="font-size: 32px; margin-bottom: 8px;">2️⃣</div>
+              <div style="font-size: 16px;">Year 2</div>
+            </div>
+            <div class="year-button" data-year="year34" onclick="selectYear('year34')">
+              <div style="font-size: 32px; margin-bottom: 8px;">3️⃣4️⃣</div>
+              <div style="font-size: 16px;">Year 3 & 4</div>
+            </div>
+            <div class="year-button" data-year="year56" onclick="selectYear('year56')">
+              <div style="font-size: 32px; margin-bottom: 8px;">5️⃣6️⃣</div>
+              <div style="font-size: 16px;">Year 5 & 6</div>
+            </div>
+          </div>
+
+          <div id="word-input-section" style="display: none;">
+            <h4 style="font-size: 18px; font-weight: 800; color: #E65100; margin-bottom: 12px; text-align: center;">Enter Words (one per line)</h4>
+            <textarea id="custom-words-input" placeholder="Enter spelling words, one per line..." style="width: 100%; height: 200px; padding: 12px; border: 2px solid #FF9800; border-radius: 8px; font-size: 14px; font-weight: 600; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); resize: vertical; font-family: monospace;"></textarea>
+            <button id="continue-to-students-btn" style="width: 100%; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: white; padding: 16px; border-radius: 12px; font-weight: 800; border: none; cursor: pointer; font-size: 18px; box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4); transition: all 0.2s;">➡️ Continue to Student Setup</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // Set up the button listener after a delay to ensure DOM is ready
+      setTimeout(() => {
+        const continueBtn = document.getElementById('continue-to-students-btn');
+        if (continueBtn) {
+          continueBtn.addEventListener('click', () => {
+            const words = document.getElementById('custom-words-input').value
+              .split('\n')
+              .map(w => w.trim())
+              .filter(w => w.length > 0);
+
+            // For Year 2, check if they've entered the two-phase structure
+            if (gameState.yearLevel === 'year2') {
+              const expectedTotal = DEFAULT_YEAR_WORDS.year2.phase1.length + DEFAULT_YEAR_WORDS.year2.phase2.length;
+              if (words.length === expectedTotal) {
+                // Store as phased structure
+                gameState.customWords[gameState.yearLevel] = {
+                  phase1: words.slice(0, 4),
+                  phase2: words.slice(4)
+                };
+              } else if (words.length < 10) {
+                showToast('⚠️ Please enter at least 10 words!', '#EF4444');
+                return;
+              } else {
+                gameState.customWords[gameState.yearLevel] = {
+                  phase1: words.slice(0, 4),
+                  phase2: words.slice(4)
+                };
+              }
+            } else if (!DEFAULT_YEAR_WORDS[gameState.yearLevel] && words.length < 10) {
+              showToast('⚠️ Please enter at least 10 words!', '#EF4444');
+              return;
+            } else if (words.length > 0) {
+              gameState.customWords[gameState.yearLevel] = words;
+            }
+
+            document.querySelector('.modal-overlay').remove();
+            showPrimaryStudentSetup();
+          });
+        }
+      }, 200);
+    }
+
+    window.selectYear = function(year) {
+      gameState.yearLevel = year;
+      
+      document.querySelectorAll('.year-button').forEach(btn => {
+        btn.classList.remove('selected');
+      });
+      document.querySelector(`[data-year="${year}"]`).classList.add('selected');
+      
+      document.getElementById('word-input-section').style.display = 'block';
+      
+      // Load pre-defined words if available
+      if (gameState.customWords[year]) {
+        if (year === 'year2' && gameState.customWords[year].phase1) {
+          document.getElementById('custom-words-input').value = [...gameState.customWords[year].phase1, ...gameState.customWords[year].phase2].join('\n');
+        } else {
+          document.getElementById('custom-words-input').value = gameState.customWords[year].join('\n');
+        }
+      } else if (DEFAULT_YEAR_WORDS[year]) {
+        if (year === 'year2') {
+          document.getElementById('custom-words-input').value = [...DEFAULT_YEAR_WORDS[year].phase1, ...DEFAULT_YEAR_WORDS[year].phase2].join('\n');
+        } else {
+          document.getElementById('custom-words-input').value = DEFAULT_YEAR_WORDS[year].join('\n');
+        }
+      } else {
+        document.getElementById('custom-words-input').value = '';
+      }
+    };
+
+    function showPrimaryStudentSetup() {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 500px;">
+          <div style="font-size: 64px; text-align: center; margin-bottom: 16px;">🎓</div>
+          <h3 style="font-size: 28px; font-weight: 900; color: #F57C00; margin-bottom: 12px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Setup Student Names</h3>
+          <p style="font-size: 16px; color: #78350F; margin-bottom: 20px; text-align: center; line-height: 1.6;">Enter all student names. The system will randomly pick one student at a time to compete!</p>
+          <div id="student-name-inputs" style="margin-bottom: 20px;">
+            <input type="text" class="student-name-input" placeholder="Student 1" style="width: 100%; padding: 12px; border: 2px solid #FF9800; border-radius: 8px; font-size: 16px; font-weight: 600; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);" />
+            <input type="text" class="student-name-input" placeholder="Student 2" style="width: 100%; padding: 12px; border: 2px solid #FF9800; border-radius: 8px; font-size: 16px; font-weight: 600; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);" />
+            <input type="text" class="student-name-input" placeholder="Student 3" style="width: 100%; padding: 12px; border: 2px solid #FF9800; border-radius: 8px; font-size: 16px; font-weight: 600; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);" />
+            <input type="text" class="student-name-input" placeholder="Student 4" style="width: 100%; padding: 12px; border: 2px solid #FF9800; border-radius: 8px; font-size: 16px; font-weight: 600; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);" />
+            <input type="text" class="student-name-input" placeholder="Student 5" style="width: 100%; padding: 12px; border: 2px solid #FF9800; border-radius: 8px; font-size: 16px; font-weight: 600; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);" />
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button id="add-student-btn" style="flex: 1; background: linear-gradient(135deg, #78909C, #546E7A); color: white; padding: 12px; border-radius: 10px; font-weight: 800; border: none; cursor: pointer; font-size: 14px; box-shadow: 0 4px 12px rgba(84, 110, 122, 0.4); transition: all 0.2s;">+ Add Student</button>
+            <button id="start-game-btn" style="flex: 2; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: white; padding: 12px; border-radius: 10px; font-weight: 800; border: none; cursor: pointer; font-size: 16px; box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4); transition: all 0.2s;">🐝 Start Game</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      document.querySelector('.student-name-input').focus();
+
+      document.getElementById('add-student-btn').onclick = () => {
+        const container = document.getElementById('student-name-inputs');
+        const currentCount = container.querySelectorAll('.student-name-input').length;
+        const newInput = document.createElement('input');
+        newInput.type = 'text';
+        newInput.className = 'student-name-input';
+        newInput.placeholder = `Student ${currentCount + 1}`;
+        newInput.style.cssText = 'width: 100%; padding: 12px; border: 2px solid #FF9800; border-radius: 8px; font-size: 16px; font-weight: 600; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);';
+        container.appendChild(newInput);
+        newInput.focus();
+      };
+
+      document.getElementById('start-game-btn').onclick = () => {
+        const inputs = document.querySelectorAll('.student-name-input');
+        const names = Array.from(inputs)
+          .map(input => input.value.trim())
+          .filter(name => name.length > 0);
+
+        if (names.length < 2) {
+          showToast('⚠️ Please enter at least 2 student names!', '#EF4444');
+          return;
+        }
+
+        gameState.allStudents = names;
+        gameState.availableStudents = [...names];
+        modal.remove();
+        selectRandomPrimaryStudent();
+        initializeGame();
+      };
+    }
+
+    function showSecondaryStudentSetup() {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 500px;">
+          <div style="font-size: 64px; text-align: center; margin-bottom: 16px;">🎓</div>
+          <h3 style="font-size: 28px; font-weight: 900; color: #F57C00; margin-bottom: 12px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Setup Student Names</h3>
+          <p style="font-size: 16px; color: #78350F; margin-bottom: 20px; text-align: center; line-height: 1.6;">Enter all student names. The system will randomly select 2 students to compete!</p>
+          <div id="student-name-inputs" style="margin-bottom: 20px;">
+            <input type="text" class="student-name-input" placeholder="Student 1" style="width: 100%; padding: 12px; border: 2px solid #FF9800; border-radius: 8px; font-size: 16px; font-weight: 600; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);" />
+            <input type="text" class="student-name-input" placeholder="Student 2" style="width: 100%; padding: 12px; border: 2px solid #FF9800; border-radius: 8px; font-size: 16px; font-weight: 600; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);" />
+            <input type="text" class="student-name-input" placeholder="Student 3" style="width: 100%; padding: 12px; border: 2px solid #FF9800; border-radius: 8px; font-size: 16px; font-weight: 600; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);" />
+            <input type="text" class="student-name-input" placeholder="Student 4" style="width: 100%; padding: 12px; border: 2px solid #FF9800; border-radius: 8px; font-size: 16px; font-weight: 600; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);" />
+            <input type="text" class="student-name-input" placeholder="Student 5" style="width: 100%; padding: 12px; border: 2px solid #FF9800; border-radius: 8px; font-size: 16px; font-weight: 600; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);" />
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button id="add-student-btn" style="flex: 1; background: linear-gradient(135deg, #78909C, #546E7A); color: white; padding: 12px; border-radius: 10px; font-weight: 800; border: none; cursor: pointer; font-size: 14px; box-shadow: 0 4px 12px rgba(84, 110, 122, 0.4); transition: all 0.2s;">+ Add Student</button>
+            <button id="start-game-btn" style="flex: 2; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: white; padding: 12px; border-radius: 10px; font-weight: 800; border: none; cursor: pointer; font-size: 16px; box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4); transition: all 0.2s;">🐝 Start Game</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      document.querySelector('.student-name-input').focus();
+
+      document.getElementById('add-student-btn').onclick = () => {
+        const container = document.getElementById('student-name-inputs');
+        const currentCount = container.querySelectorAll('.student-name-input').length;
+        const newInput = document.createElement('input');
+        newInput.type = 'text';
+        newInput.className = 'student-name-input';
+        newInput.placeholder = `Student ${currentCount + 1}`;
+        newInput.style.cssText = 'width: 100%; padding: 12px; border: 2px solid #FF9800; border-radius: 8px; font-size: 16px; font-weight: 600; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);';
+        container.appendChild(newInput);
+        newInput.focus();
+      };
+
+      document.getElementById('start-game-btn').onclick = () => {
+        const inputs = document.querySelectorAll('.student-name-input');
+        const names = Array.from(inputs)
+          .map(input => input.value.trim())
+          .filter(name => name.length > 0);
+
+        if (names.length < 2) {
+          showToast('⚠️ Please enter at least 2 student names!', '#EF4444');
+          return;
+        }
+
+        gameState.allStudents = names;
+        gameState.availableStudents = [...names];
+        modal.remove();
+        selectRandomSecondaryStudents();
+        document.getElementById('second-player-display').style.display = 'block';
+        initializeGame();
+      };
+    }
+
+    function selectRandomPrimaryStudent() {
+      if (gameState.availableStudents.length === 0) {
+        showToast('⚠️ No more students available!', '#EF4444');
+        return;
+      }
+
+      const randomIndex = Math.floor(Math.random() * gameState.availableStudents.length);
+      const student = gameState.availableStudents.splice(randomIndex, 1)[0];
+
+      // Load their existing score or start at 0
+      const existingScore = gameState.studentScores[student] || 0;
+      gameState.currentPlayer = { name: student, score: existingScore };
+      gameState.gameStarted = true;
+
+      updateDisplay();
+      showToast(`🎲 ${student} is up!`, '#FBBF24');
+    }
+
+    function selectRandomSecondaryStudents() {
+      if (gameState.availableStudents.length < 2) {
+        showToast('⚠️ Not enough students available!', '#EF4444');
+        return;
+      }
+
+      const randomIndex1 = Math.floor(Math.random() * gameState.availableStudents.length);
+      const student1 = gameState.availableStudents.splice(randomIndex1, 1)[0];
+
+      const randomIndex2 = Math.floor(Math.random() * gameState.availableStudents.length);
+      const student2 = gameState.availableStudents.splice(randomIndex2, 1)[0];
+
+      gameState.currentPlayer = { name: student1, score: 0 };
+      gameState.secondPlayer = { name: student2, score: 0 };
+      gameState.activePlayer = 'A';
+      gameState.gameStarted = true;
+
+      updateDisplay();
+      showToast(`🎲 ${student1} vs ${student2}!`, '#FBBF24');
+    }
+
+    function initializeGame() {
+      if (gameState.gameMode === 'primary') {
+        // For Year 2, start with phase 1 words only
+        if (gameState.yearLevel === 'year2' && gameState.customWords[gameState.yearLevel].phase1) {
+          gameState.year2Phase = 1;
+          gameState.year2CorrectCount = 0;
+          gameState.availableWords = [...gameState.customWords[gameState.yearLevel].phase1];
+        } else if (gameState.yearLevel === 'year2') {
+          // Fallback if structure is different
+          gameState.availableWords = [...gameState.customWords[gameState.yearLevel]];
+        } else {
+          gameState.availableWords = [...gameState.customWords[gameState.yearLevel]];
+          shuffleArray(gameState.availableWords);
+        }
+      } else {
+        gameState.availableWords = [...DEFAULT_SECONDARY_WORDS];
+        shuffleArray(gameState.availableWords);
+      }
+      
+      gameState.hexagonWords = gameState.availableWords.slice(0, 37);
+      gameState.remainingWords = gameState.availableWords.slice(37);
+      gameState.wordsUsedCount = 0;
+      renderHoneycomb();
+      updateDisplay();
+      renderLeaderboard();
+    }
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function refreshHexagons() {
+      const wordsToAdd = Math.min(gameState.usedHexagons.size, gameState.remainingWords.length);
+      
+      if (wordsToAdd > 0) {
+        const newWords = gameState.remainingWords.splice(0, wordsToAdd);
+        gameState.hexagonWords = [...gameState.hexagonWords, ...newWords];
+        gameState.usedHexagons.clear();
+        gameState.wordsUsedCount = 0;
+        renderHoneycomb();
+        showToast(`🔄 ${wordsToAdd} new words added to the hive!`, '#FBBF24');
+      }
+    }
+
+    function renderHoneycomb() {
+      const container = document.getElementById('honeycomb');
+      const rows = [6, 7, 8, 7, 6, 3];
+      let hexIndex = 0;
+      let html = '';
+
+      rows.forEach((hexCount, rowIndex) => {
+        html += '<div class="hexagon-row">';
+        for (let i = 0; i < hexCount; i++) {
+          if (hexIndex < gameState.hexagonWords.length) {
+            const isUsed = gameState.usedHexagons.has(hexIndex);
+            html += `
+              <div class="hexagon ${isUsed ? 'used' : ''}" data-index="${hexIndex}" onclick="clickHexagon(${hexIndex})">
+                <div class="hexagon-inner" style="background: ${isUsed ? '#B0BEC5' : 'linear-gradient(135deg, #FFB74D, #FFA726)'}; color: ${isUsed ? '#78909C' : '#FFFFFF'};">
+                  ${isUsed ? '✓' : '🐝'}
+                </div>
+              </div>
+            `;
+            hexIndex++;
+          }
+        }
+        html += '</div>';
+      });
+
+      container.innerHTML = html;
+    }
+
+    function clickHexagon(index) {
+      if (gameState.usedHexagons.has(index)) return;
+
+      if (!gameState.waitingForResponse) {
+        gameState.waitingForResponse = true;
+        gameState.currentClickedIndex = index;
+        gameState.repeatCount = 0;
+        
+        document.querySelectorAll('.hexagon').forEach((hex) => {
+          const hexIndex = parseInt(hex.dataset.index);
+          if (hexIndex !== index && !gameState.usedHexagons.has(hexIndex)) {
+            hex.style.opacity = '0.3';
+            hex.style.pointerEvents = 'none';
+          }
+        });
+        
+        document.getElementById('spelling-input-container').style.display = 'block';
+        document.getElementById('spelling-input').value = '';
+        document.getElementById('spelling-input').focus();
+        
+        // Start the 40-second timer
+        startTimer();
+      }
+
+      if (gameState.currentClickedIndex === index && gameState.repeatCount < gameState.maxRepeats) {
+        gameState.repeatCount++;
+        const word = gameState.hexagonWords[index];
+        speakWord(word);
+
+        const clickedHex = document.querySelector(`.hexagon[data-index="${index}"]`);
+        clickedHex.style.transform = 'scale(1.2)';
+        clickedHex.style.zIndex = '10';
+        setTimeout(() => {
+          clickedHex.style.transform = '';
+          clickedHex.style.zIndex = '';
+        }, 1000);
+
+        if (gameState.repeatCount < gameState.maxRepeats) {
+          showToast(`🔊 Word repeated (${gameState.repeatCount}/${gameState.maxRepeats})`, '#3B82F6');
+        } else {
+          showToast(`⚠️ Maximum repeats reached (${gameState.maxRepeats}/${gameState.maxRepeats})`, '#F59E0B');
+        }
+      }
+    }
+    
+    function startTimer() {
+      gameState.timeRemaining = 40;
+      updateTimerDisplay();
+      
+      const timerInterval = setInterval(() => {
+        gameState.timeRemaining--;
+        updateTimerDisplay();
+        
+        if (gameState.timeRemaining <= 0) {
+          clearInterval(timerInterval);
+          handleTimeUp();
+        }
+      }, 1000);
+      
+      // Store interval for cleanup
+      gameState.timerInterval = timerInterval;
+    }
+    
+    function updateTimerDisplay() {
+      const timerEl = document.getElementById('timer-display');
+      if (timerEl) {
+        timerEl.textContent = gameState.timeRemaining;
+        
+        // Change color based on time remaining
+        if (gameState.timeRemaining <= 10) {
+          timerEl.style.color = '#DC2626';
+          timerEl.style.borderColor = '#DC2626';
+          timerEl.style.animation = 'pulse 0.5s ease-in-out infinite';
+        } else if (gameState.timeRemaining <= 20) {
+          timerEl.style.color = '#F59E0B';
+          timerEl.style.borderColor = '#F59E0B';
+        } else {
+          timerEl.style.color = '#E65100';
+          timerEl.style.borderColor = '#FF9800';
+        }
+      }
+    }
+    
+    function handleTimeUp() {
+      if (!gameState.waitingForResponse) return;
+      
+      showToast('⏰ Time is up! Incorrect!', '#DC2626');
+      handleMistake();
+    }
+
+    function checkSpelling() {
+      if (!gameState.waitingForResponse) return;
+      
+      // Clear timer
+      if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+      }
+      
+      const userInput = document.getElementById('spelling-input').value.trim().toLowerCase();
+      const correctWord = gameState.hexagonWords[gameState.currentClickedIndex].toLowerCase();
+      
+      if (!userInput) {
+        showToast('⚠️ Please enter a word!', '#EF4444');
+        // Restart timer
+        startTimer();
+        return;
+      }
+      
+      if (userInput === correctWord) {
+        handleCorrect();
+      } else {
+        handleMistake();
+      }
+    }
+
+    function cancelSpelling() {
+      if (!gameState.waitingForResponse) return;
+      
+      // Clear timer
+      if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+      }
+      
+      gameState.waitingForResponse = false;
+      gameState.currentClickedIndex = null;
+      gameState.repeatCount = 0;
+      
+      document.getElementById('spelling-input-container').style.display = 'none';
+      document.getElementById('spelling-input').value = '';
+      
+      document.querySelectorAll('.hexagon').forEach((hex) => {
+        if (!gameState.usedHexagons.has(parseInt(hex.dataset.index))) {
+          hex.style.opacity = '1';
+          hex.style.pointerEvents = 'auto';
+        }
+      });
+      
+      showToast('❌ Spelling cancelled', '#78909C');
+    }
+
+    function speakWord(word) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.rate = 0.75;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    async function handleCorrect() {
+      if (!gameState.waitingForResponse) {
+        showToast('⚠️ Please click a hexagon first!', '#EF4444');
+        return;
+      }
+
+      // Clear timer
+      if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+      }
+
+      const clickedIndex = gameState.currentClickedIndex;
+      gameState.usedHexagons.add(clickedIndex);
+      gameState.wordsUsedCount++;
+
+      if (gameState.gameMode === 'primary') {
+        // Primary mode - give point to current player and put them BACK in the pool
+        gameState.currentPlayer.score++;
+        const currentPlayerName = gameState.currentPlayer.name;
+        const currentPlayerScore = gameState.currentPlayer.score;
+
+        // Save their score for next round
+        gameState.studentScores[currentPlayerName] = currentPlayerScore;
+
+        // For Year 2 Phase 1, track correct answers by checking which hexagon was used
+        if (gameState.yearLevel === 'year2' && gameState.year2Phase === 1) {
+          const correctWord = gameState.hexagonWords[clickedIndex];
+          const phase1Words = gameState.customWords[gameState.yearLevel] && gameState.customWords[gameState.yearLevel].phase1 
+            ? gameState.customWords[gameState.yearLevel].phase1 
+            : DEFAULT_YEAR_WORDS.year2.phase1;
+          
+          // Check if this word was from phase 1
+          if (phase1Words.includes(correctWord)) {
+            gameState.year2CorrectCount++;
+            
+            // Check if all 4 phase 1 words have been spelled correctly
+            if (gameState.year2CorrectCount >= phase1Words.length) {
+              // Unlock phase 2!
+              gameState.year2Phase = 2;
+              const phase2Words = gameState.customWords[gameState.yearLevel] && gameState.customWords[gameState.yearLevel].phase2
+                ? [...gameState.customWords[gameState.yearLevel].phase2]
+                : [...DEFAULT_YEAR_WORDS.year2.phase2];
+              
+              gameState.availableWords = [...gameState.availableWords, ...phase2Words];
+              gameState.hexagonWords = [...gameState.hexagonWords, ...phase2Words];
+              
+              renderHoneycomb();
+              showToast('🎉 Amazing! Harder words unlocked!', '#FBBF24');
+            }
+          }
+        }
+
+        // Put the current player BACK into available students pool
+        gameState.availableStudents.push(currentPlayerName);
+
+        gameState.waitingForResponse = false;
+        gameState.currentClickedIndex = null;
+        gameState.repeatCount = 0;
+
+        document.getElementById('spelling-input-container').style.display = 'none';
+        document.getElementById('spelling-input').value = '';
+
+        // Re-render honeycomb to show word is still available
+        renderHoneycomb();
+
+        document.querySelectorAll('.hexagon').forEach((hex) => {
+          if (!gameState.usedHexagons.has(parseInt(hex.dataset.index))) {
+            hex.style.opacity = '1';
+            hex.style.pointerEvents = 'auto';
+          }
+        });
+
+        updateDisplay();
+        showToast(`�������� Correct! ${currentPlayerName} earns 1 point!`, '#10B981');
+
+        // Check if there's only ONE student left - they win!
+        if (gameState.availableStudents.length === 1) {
+          setTimeout(() => {
+            const finalWinner = gameState.availableStudents[0];
+            const finalWinnerScore = gameState.studentScores[finalWinner] || 0;
+            showWinnerModal(finalWinner, finalWinnerScore);
+          }, 1500);
+        } else {
+          // Select next random student after a short delay
+          setTimeout(() => {
+            if (gameState.usedHexagons.size === gameState.hexagonWords.length && gameState.remainingWords.length === 0) {
+              endGame();
+            } else {
+              selectRandomPrimaryStudent();
+            }
+          }, 1500);
+        }
+
+      } else {
+        // Secondary mode - existing logic
+        const currentPlayerName = gameState.activePlayer === 'A' ? gameState.currentPlayer.name : gameState.secondPlayer.name;
+
+        if (gameState.activePlayer === 'A') {
+          gameState.currentPlayer.score++;
+        } else {
+          gameState.secondPlayer.score++;
+        }
+
+        gameState.activePlayer = gameState.activePlayer === 'A' ? 'B' : 'A';
+
+        gameState.waitingForResponse = false;
+        gameState.currentClickedIndex = null;
+        gameState.repeatCount = 0;
+
+        document.getElementById('spelling-input-container').style.display = 'none';
+        document.getElementById('spelling-input').value = '';
+
+        // Re-render honeycomb to show word is still available
+        renderHoneycomb();
+
+        document.querySelectorAll('.hexagon').forEach((hex) => {
+          if (!gameState.usedHexagons.has(parseInt(hex.dataset.index))) {
+            hex.style.opacity = '1';
+            hex.style.pointerEvents = 'auto';
+          }
+        });
+
+        updateDisplay();
+        showToast(`✓ Correct! ${currentPlayerName} earns 1 point!`, '#10B981');
+
+        if (gameState.usedHexagons.size === gameState.hexagonWords.length && gameState.remainingWords.length === 0) {
+          setTimeout(() => endGame(), 1000);
+        }
+      }
+    }
+
+    function handleMistake() {
+      if (!gameState.waitingForResponse) {
+        showToast('⚠️ Please click a hexagon first!', '#EF4444');
+        return;
+      }
+
+      // Clear timer
+      if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+      }
+
+      const clickedIndex = gameState.currentClickedIndex;
+      
+      // DON'T mark hexagon as used - keep it available for next student
+      // gameState.usedHexagons.add(clickedIndex); // REMOVED
+      // gameState.wordsUsedCount++; // REMOVED
+
+      if (gameState.gameMode === 'primary') {
+        // Primary mode - eliminate current player
+        const eliminatedPlayer = gameState.currentPlayer.name;
+        const eliminatedScore = gameState.currentPlayer.score;
+        
+        gameState.eliminatedPlayers.push({ name: eliminatedPlayer, score: eliminatedScore });
+        
+        gameState.waitingForResponse = false;
+        gameState.currentClickedIndex = null;
+        gameState.repeatCount = 0;
+
+        document.getElementById('spelling-input-container').style.display = 'none';
+        document.getElementById('spelling-input').value = '';
+
+        // Re-render honeycomb to show word is still available
+        renderHoneycomb();
+
+        document.querySelectorAll('.hexagon').forEach((hex) => {
+          if (!gameState.usedHexagons.has(parseInt(hex.dataset.index))) {
+            hex.style.opacity = '1';
+            hex.style.pointerEvents = 'auto';
+          }
+        });
+
+        updateDisplay();
+
+        document.getElementById('correct-btn').disabled = true;
+        document.getElementById('mistake-btn').disabled = true;
+        
+        showPrimaryEliminationModal(eliminatedPlayer, eliminatedScore);
+
+      } else {
+        // Secondary mode - existing logic
+        const eliminatedPlayer = gameState.activePlayer === 'A' ? gameState.currentPlayer.name : gameState.secondPlayer.name;
+        
+        gameState.activePlayer = gameState.activePlayer === 'A' ? 'B' : 'A';
+        
+        gameState.waitingForResponse = false;
+        gameState.currentClickedIndex = null;
+        gameState.repeatCount = 0;
+
+        document.getElementById('spelling-input-container').style.display = 'none';
+        document.getElementById('spelling-input').value = '';
+
+        // Re-render honeycomb to show word is still available
+        renderHoneycomb();
+
+        document.querySelectorAll('.hexagon').forEach((hex) => {
+          if (!gameState.usedHexagons.has(parseInt(hex.dataset.index))) {
+            hex.style.opacity = '1';
+            hex.style.pointerEvents = 'auto';
+          }
+        });
+
+        updateDisplay();
+
+        document.getElementById('correct-btn').disabled = true;
+        document.getElementById('mistake-btn').disabled = true;
+        
+        showSecondaryEliminationModal(eliminatedPlayer);
+      }
+    }
+
+    function showWinnerModal(winnerName, winnerScore) {
+      // For Year 2, check if there are multiple winners (students still in the pool)
+      const isYear2 = gameState.yearLevel === 'year2';
+      const multipleWinners = isYear2 && gameState.availableStudents.length > 0;
+      
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      
+      if (multipleWinners) {
+        // Year 2 with multiple winners - show celebration for all
+        const allWinners = [winnerName, ...gameState.availableStudents];
+        const winnersList = allWinners.map(name => {
+          const score = gameState.studentScores[name] || 0;
+          return `
+            <div style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2); padding: 16px; border-radius: 12px; border: 3px solid #FF9800; margin-bottom: 12px; position: relative;">
+              <div class="winner-badge" style="position: absolute; top: -12px; right: -12px;">⭐</div>
+              <div style="font-size: 24px; font-weight: 900; color: #F57C00; text-align: center; margin-bottom: 4px;">${name}</div>
+              <div style="font-size: 20px; font-weight: 900; color: #FF9800; text-align: center;">${score} points</div>
+            </div>
+          `;
+        }).join('');
+        
+        modal.innerHTML = `
+          <div class="modal-content" style="max-width: 500px;">
+            <div style="font-size: 96px; text-align: center; margin-bottom: 16px; animation: bounce 1s ease infinite;">🎉</div>
+            <h3 style="font-size: 36px; font-weight: 900; color: #F57C00; margin-bottom: 12px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">🌟 CONGRATULATIONS! 🌟</h3>
+            <p style="font-size: 20px; color: #78350F; margin-bottom: 20px; text-align: center; line-height: 1.6; font-weight: 700;">Amazing job! All remaining students are winners! 🏆</p>
+            <div style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+              ${winnersList}
+            </div>
+            <p style="font-size: 16px; color: #78350F; margin-bottom: 24px; text-align: center; line-height: 1.6;">You all did wonderfully on the Year 2 spelling challenge! Keep up the great work! 🐝✨</p>
+            <button id="new-game-btn" style="width: 100%; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: white; padding: 16px; border-radius: 12px; font-weight: 800; border: none; cursor: pointer; font-size: 18px; box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4); transition: all 0.2s;">🔄 Start New Game</button>
+          </div>
+        `;
+      } else {
+        // Single winner - original modal
+        modal.innerHTML = `
+          <div class="modal-content" style="max-width: 500px;">
+            <div style="font-size: 96px; text-align: center; margin-bottom: 16px; animation: bounce 1s ease infinite;">🏆</div>
+            <h3 style="font-size: 36px; font-weight: 900; color: #F57C00; margin-bottom: 12px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">🎉 WINNER! 🎉</h3>
+            <div style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2); padding: 24px; border-radius: 16px; border: 4px solid #FF9800; margin-bottom: 20px; position: relative;">
+              <div class="winner-badge" style="position: absolute; top: -15px; right: -15px;">👑</div>
+              <div style="font-size: 14px; color: #E65100; font-weight: 700; text-align: center; margin-bottom: 8px;">🐝 SPELLING BEE CHAMPION 🐝</div>
+              <div style="font-size: 40px; font-weight: 900; color: #F57C00; text-align: center; margin-bottom: 8px;">${winnerName}</div>
+              <div style="font-size: 28px; font-weight: 900; color: #FF9800; text-align: center;">${winnerScore} points</div>
+            </div>
+            <p style="font-size: 18px; color: #78350F; margin-bottom: 24px; text-align: center; line-height: 1.6;">Congratulations! You are the last student standing and the Spelling Bee Champion! ��</p>
+            <button id="new-game-btn" style="width: 100%; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: white; padding: 16px; border-radius: 12px; font-weight: 800; border: none; cursor: pointer; font-size: 18px; box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4); transition: all 0.2s;">🔄 Start New Game</button>
+          </div>
+        `;
+      }
+      
+      document.body.appendChild(modal);
+      
+      // Save all winners to leaderboard
+      if (multipleWinners) {
+        gameState.availableStudents.forEach(studentName => {
+          const score = gameState.studentScores[studentName] || 0;
+          saveToLeaderboard(studentName, score);
+        });
+      }
+      saveToLeaderboard(winnerName, winnerScore);
+      
+      document.getElementById('new-game-btn').onclick = () => {
+        modal.remove();
+        resetGame();
+      };
+    }
+    
+    function showPrimaryEliminationModal(eliminatedPlayer, eliminatedScore) {
+      // Check if there's only one student left - they are the winner!
+      if (gameState.availableStudents.length === 1) {
+        const winner = gameState.availableStudents[0];
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+          <div class="modal-content" style="max-width: 500px;">
+            <div style="font-size: 64px; text-align: center; margin-bottom: 16px;">🏆</div>
+            <h3 style="font-size: 32px; font-weight: 900; color: #F57C00; margin-bottom: 12px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">${winner} Wins!</h3>
+            <p style="font-size: 18px; color: #78350F; margin-bottom: 12px; text-align: center; line-height: 1.6;">${eliminatedPlayer} was eliminated! ${winner} is the last student standing and wins the Spelling Bee! 🎉</p>
+            <div style="background: linear-gradient(135deg, #FFEBEE, #FFCDD2); padding: 16px; border-radius: 12px; border: 3px solid #EF5350; margin-bottom: 16px;">
+              <div style="font-size: 14px; color: #C62828; font-weight: 700; text-align: center; margin-bottom: 8px;">ELIMINATED: ${eliminatedPlayer}</div>
+              <div style="font-size: 28px; font-weight: 900; color: #E53935; text-align: center;">${eliminatedScore} points</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2); padding: 20px; border-radius: 12px; border: 3px solid #FF9800; margin-bottom: 20px; position: relative;">
+              <div class="winner-badge" style="position: absolute; top: -15px; right: -15px;">🏆</div>
+              <div style="font-size: 14px; color: #E65100; font-weight: 700; text-align: center; margin-bottom: 8px;">🎉 CHAMPION 🎉</div>
+              <div style="font-size: 32px; font-weight: 900; color: #F57C00; text-align: center;">${winner}</div>
+            </div>
+            <button id="new-game-btn" style="width: 100%; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: white; padding: 16px; border-radius: 12px; font-weight: 800; border: none; cursor: pointer; font-size: 18px; box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4); transition: all 0.2s;">🔄 Start New Game</button>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        
+        saveToLeaderboard(eliminatedPlayer, eliminatedScore);
+        
+        document.getElementById('new-game-btn').onclick = () => {
+          modal.remove();
+          resetGame();
+        };
+        return;
+      }
+
+      if (gameState.availableStudents.length === 0) {
+        // This shouldn't happen in the new logic, but just in case
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+          <div class="modal-content" style="max-width: 500px;">
+            <div style="font-size: 64px; text-align: center; margin-bottom: 16px;">���</div>
+            <h3 style="font-size: 32px; font-weight: 900; color: #F57C00; margin-bottom: 12px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Game Over!</h3>
+            <p style="font-size: 18px; color: #78350F; margin-bottom: 12px; text-align: center; line-height: 1.6;">All students have competed! 🎉</p>
+            <button id="new-game-btn" style="width: 100%; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: white; padding: 16px; border-radius: 12px; font-weight: 800; border: none; cursor: pointer; font-size: 18px; box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4); transition: all 0.2s;">🔄 Start New Game</button>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        
+        saveToLeaderboard(eliminatedPlayer, eliminatedScore);
+        
+        document.getElementById('new-game-btn').onclick = () => {
+          modal.remove();
+          resetGame();
+        };
+        return;
+      }
+
+      // Select next random student
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 500px;">
+          <div style="font-size: 64px; text-align: center; margin-bottom: 16px;">😢</div>
+          <h3 style="font-size: 32px; font-weight: 900; color: #DC2626; margin-bottom: 12px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">${eliminatedPlayer} is Eliminated!</h3>
+          <div style="background: linear-gradient(135deg, #FFEBEE, #FFCDD2); padding: 16px; border-radius: 12px; border: 3px solid #EF5350; margin-bottom: 20px;">
+            <div style="font-size: 14px; color: #C62828; font-weight: 700; text-align: center; margin-bottom: 8px;">FINAL SCORE</div>
+            <div style="font-size: 36px; font-weight: 900; color: #E53935; text-align: center;">${eliminatedScore} points</div>
+          </div>
+          <p style="font-size: 16px; color: #78350F; margin-bottom: 12px; text-align: center; line-height: 1.6;">Students remaining: <strong>${gameState.availableStudents.length}</strong></p>
+          <p style="font-size: 16px; color: #78350F; margin-bottom: 20px; text-align: center; line-height: 1.6;">Selecting next random student...</p>
+          <div id="next-student-display" style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2); padding: 20px; border-radius: 12px; border: 3px solid #FF9800; margin-bottom: 24px; text-align: center;">
+            <div style="font-size: 14px; color: #E65100; font-weight: 700; margin-bottom: 8px; opacity: 0.8;">NEXT PLAYER</div>
+            <div style="font-size: 32px; font-weight: 900; color: #F57C00; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">🎲 Loading...</div>
+          </div>
+          <button id="continue-game-btn" style="width: 100%; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: white; padding: 16px; border-radius: 12px; font-weight: 800; border: none; cursor: pointer; font-size: 18px; box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4); transition: all 0.2s;">���� Continue Game</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      saveToLeaderboard(eliminatedPlayer, eliminatedScore);
+
+      // Randomly select next student after a short delay
+      setTimeout(() => {
+        const randomIndex = Math.floor(Math.random() * gameState.availableStudents.length);
+        const newStudent = gameState.availableStudents.splice(randomIndex, 1)[0];
+        
+        document.getElementById('next-student-display').innerHTML = `
+          <div style="font-size: 14px; color: #E65100; font-weight: 700; margin-bottom: 8px; opacity: 0.8;">NEXT PLAYER</div>
+          <div style="font-size: 32px; font-weight: 900; color: #F57C00; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">🎲 ${newStudent}</div>
+        `;
+
+        document.getElementById('continue-game-btn').onclick = () => {
+          gameState.currentPlayer = { name: newStudent, score: 0 };
+          
+          document.getElementById('correct-btn').disabled = false;
+          document.getElementById('mistake-btn').disabled = false;
+          
+          updateDisplay();
+          showToast(`👤 ${newStudent} is up!`, '#10B981');
+          modal.remove();
+        };
+      }, 800);
+    }
+
+    function showSecondaryEliminationModal(eliminatedPlayer) {
+      const eliminatedPlayerData = gameState.activePlayer === 'A' 
+        ? { name: gameState.secondPlayer.name, score: gameState.secondPlayer.score }
+        : { name: gameState.currentPlayer.name, score: gameState.currentPlayer.score };
+      
+      gameState.eliminatedPlayers.push(eliminatedPlayerData);
+
+      if (gameState.availableStudents.length === 0) {
+        // Game over - no more students
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        const winner = gameState.activePlayer === 'A' ? gameState.currentPlayer : gameState.secondPlayer;
+        modal.innerHTML = `
+          <div class="modal-content" style="max-width: 500px;">
+            <div style="font-size: 64px; text-align: center; margin-bottom: 16px;">🏆</div>
+            <h3 style="font-size: 32px; font-weight: 900; color: #F57C00; margin-bottom: 12px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">${winner.name} Wins!</h3>
+            <p style="font-size: 18px; color: #78350F; margin-bottom: 28px; text-align: center; line-height: 1.6;">All students have competed! ${winner.name} is the Spelling Bee Champion! 🎉</p>
+            <button id="new-game-btn" style="width: 100%; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: white; padding: 16px; border-radius: 12px; font-weight: 800; border: none; cursor: pointer; font-size: 18px; box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4); transition: all 0.2s;">🔄 Start New Game</button>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        
+        saveToLeaderboard(winner.name, winner.score);
+        
+        document.getElementById('new-game-btn').onclick = () => {
+          modal.remove();
+          resetGame();
+        };
+        return;
+      }
+
+      // Select random student
+      const randomIndex = Math.floor(Math.random() * gameState.availableStudents.length);
+      const newStudent = gameState.availableStudents.splice(randomIndex, 1)[0];
+
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 500px;">
+          <div style="font-size: 64px; text-align: center; margin-bottom: 16px;">😢</div>
+          <h3 style="font-size: 32px; font-weight: 900; color: #DC2626; margin-bottom: 12px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">${eliminatedPlayer} is Eliminated!</h3>
+          <p style="font-size: 18px; color: #78350F; margin-bottom: 20px; text-align: center; line-height: 1.6;">The system has randomly selected the next competitor...</p>
+          <div style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2); padding: 20px; border-radius: 12px; border: 3px solid #FF9800; margin-bottom: 24px; text-align: center;">
+            <div style="font-size: 14px; color: #E65100; font-weight: 700; margin-bottom: 8px; opacity: 0.8;">NEXT COMPETITOR</div>
+            <div style="font-size: 32px; font-weight: 900; color: #F57C00; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">🎲 ${newStudent}</div>
+          </div>
+          <button id="continue-game-btn" style="width: 100%; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: white; padding: 16px; border-radius: 12px; font-weight: 800; border: none; cursor: pointer; font-size: 18px; box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4); transition: all 0.2s;">🐝 Continue Game</button>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      document.getElementById('continue-game-btn').onclick = () => {
+        if (gameState.activePlayer === 'A') {
+          gameState.secondPlayer = { name: newStudent, score: 0 };
+        } else {
+          gameState.currentPlayer = { name: newStudent, score: 0 };
+        }
+        
+        document.getElementById('correct-btn').disabled = false;
+        document.getElementById('mistake-btn').disabled = false;
+        
+        updateDisplay();
+        showToast(`👤 ${newStudent} joins the competition!`, '#10B981');
+        modal.remove();
+      };
+    }
+
+    function updateDisplay() {
+      if (gameState.gameMode === 'primary') {
+        document.getElementById('current-player-name').textContent = gameState.currentPlayer.name;
+        document.getElementById('current-player-score').textContent = gameState.currentPlayer.score;
+      } else {
+        // Secondary mode
+        const displayA = document.getElementById('current-player-display');
+        const displayB = document.getElementById('second-player-display');
+        
+        document.getElementById('current-player-name').textContent = gameState.currentPlayer.name;
+        document.getElementById('current-player-score').textContent = gameState.currentPlayer.score;
+        document.getElementById('second-player-name').textContent = gameState.secondPlayer.name;
+        document.getElementById('second-player-score').textContent = gameState.secondPlayer.score;
+
+        if (gameState.activePlayer === 'A') {
+          displayA.classList.add('active');
+          displayB.classList.remove('active');
+          displayA.style.background = 'linear-gradient(135deg, #FFF3E0, #FFE0B2)';
+          displayA.style.border = '3px solid #FF9800';
+          displayA.style.boxShadow = '0 8px 24px rgba(255, 152, 0, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.5)';
+          
+          displayB.style.background = 'linear-gradient(135deg, #E0E0E0, #BDBDBD)';
+          displayB.style.border = '3px solid #9E9E9E';
+          displayB.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+        } else {
+          displayB.classList.add('active');
+          displayA.classList.remove('active');
+          displayB.style.background = 'linear-gradient(135deg, #FFF3E0, #FFE0B2)';
+          displayB.style.border = '3px solid #FF9800';
+          displayB.style.boxShadow = '0 8px 24px rgba(255, 152, 0, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.5)';
+          
+          displayA.style.background = 'linear-gradient(135deg, #E0E0E0, #BDBDBD)';
+          displayA.style.border = '3px solid #9E9E9E';
+          displayA.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+        }
+      }
+      
+      renderEliminatedPlayers();
+    }
+
+    async function saveToLeaderboard(studentName, score) {
+      if (window.dataSdk && leaderboardData.length < 999) {
+        const yearLabel = gameState.gameMode === 'primary' 
+          ? gameState.yearLevel.replace('year', 'Year ').replace('34', '3&4').replace('56', '5&6')
+          : 'Secondary';
+        
+        await window.dataSdk.create({
+          student_name: studentName,
+          score: score,
+          timestamp: new Date().toISOString(),
+          year_level: yearLabel,
+          game_mode: gameState.gameMode
+        });
+      }
+    }
+
+    async function endGame() {
+      if (gameState.gameMode === 'primary') {
+        // In primary mode, the last student is the winner
+        showToast(`🎉 Game complete! Check the leaderboard!`, '#FBBF24');
+      } else {
+        const winner = gameState.currentPlayer.score > gameState.secondPlayer.score ? gameState.currentPlayer : 
+                       gameState.secondPlayer.score > gameState.currentPlayer.score ? gameState.secondPlayer : null;
+
+        if (winner) {
+          showToast(`🎉 ${winner.name} wins with ${winner.score} points!`, '#FBBF24');
+          await saveToLeaderboard(winner.name, winner.score);
+        } else {
+          showToast(`🤝 It's a tie! Both players scored ${gameState.currentPlayer.score} points!`, '#FBBF24');
+        }
+      }
+    }
+
+    function resetGame() {
+      // Clear any active timer
+      if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+      }
+      
+      gameState = {
+        gameMode: null,
+        yearLevel: null,
+        customWords: {},
+        allStudents: [],
+        availableStudents: [],
+        currentPlayer: { name: '', score: 0 },
+        secondPlayer: { name: '', score: 0 },
+        activePlayer: 'A',
+        usedHexagons: new Set(),
+        availableWords: [],
+        hexagonWords: [],
+        waitingForResponse: false,
+        wordsUsedCount: 0,
+        remainingWords: [],
+        currentClickedIndex: null,
+        repeatCount: 0,
+        maxRepeats: 3,
+        eliminatedPlayers: [],
+        gameStarted: false,
+        timerTimeout: null,
+        timeRemaining: 40,
+        studentScores: {},
+        year2Phase: 1,
+        year2CorrectCount: 0
+      };
+
+      document.getElementById('correct-btn').disabled = false;
+      document.getElementById('mistake-btn').disabled = false;
+      document.getElementById('second-player-display').style.display = 'none';
+
+      document.querySelectorAll('.winner-badge').forEach(badge => badge.remove());
+
+      showGameModeSelection();
+      showToast('🔄 New game started!', '#6B7280');
+    }
+
+    function renderEliminatedPlayers() {
+      const section = document.getElementById('eliminated-section');
+      const container = document.getElementById('eliminated-list');
+      
+      if (gameState.eliminatedPlayers.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      
+      section.style.display = 'block';
+      container.innerHTML = gameState.eliminatedPlayers.map((player) => {
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: linear-gradient(135deg, #FFEBEE, #FFCDD2); border-radius: 8px; margin-bottom: 6px; border: 2px solid #EF5350; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 16px;">❌</span>
+              <span style="font-weight: 700; color: #C62828; font-size: 13px;">${player.name}</span>
+            </div>
+            <span style="font-size: 20px; font-weight: 900; color: #E53935; text-shadow: 0 1px 3px rgba(0,0,0,0.1);">${player.score}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderLeaderboard() {
+      const container = document.getElementById('leaderboard');
+
+      if (leaderboardData.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #E65100; padding: 16px; font-weight: 600; font-size: 13px; opacity: 0.7;">No scores yet. Be the first champion! 🏆</div>';
+        return;
+      }
+
+      const top5 = leaderboardData.slice(0, 5);
+      container.innerHTML = top5.map((entry, index) => {
+        const medal = index === 0 ? '���' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: ${index < 3 ? 'linear-gradient(135deg, #FFF3E0, #FFE0B2)' : 'linear-gradient(135deg, #ECEFF1, #CFD8DC)'}; border-radius: 10px; margin-bottom: 6px; border: 2px solid ${index < 3 ? '#FF9800' : '#B0BEC5'}; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); transition: all 0.2s;">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; overflow: hidden;">
+              <span style="font-size: 20px; font-weight: 900; min-width: 28px;">${medal}</span>
+              <div style="overflow: hidden;">
+                <div style="font-weight: 700; color: #37474F; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${entry.student_name}</div>
+                ${entry.year_level ? `<div style="font-size: 10px; color: #78909C; font-weight: 600;">${entry.year_level}</div>` : ''}
+              </div>
+            </div>
+            <span style="font-size: 24px; font-weight: 900; color: ${index < 3 ? '#F57C00' : '#607D8B'}; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">${entry.score}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function showToast(message, color) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      toast.style.background = color;
+      toast.style.color = 'white';
+      document.body.appendChild(toast);
+
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    window.clickHexagon = clickHexagon;
+
+    init();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ac4a94027d7edd8',t:'MTc2NTQ1Mjc0My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
